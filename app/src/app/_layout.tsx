@@ -1,12 +1,13 @@
 import {
-  Fraunces_400Regular,
-  Fraunces_600SemiBold,
   useFonts,
+  Fraunces_600SemiBold,
+  Fraunces_400Regular,
 } from "@expo-google-fonts/fraunces";
 import { Manrope_500Medium, Manrope_700Bold } from "@expo-google-fonts/manrope";
 import { Stack } from "expo-router";
 import { View } from "react-native";
 import { colors } from "../lib/theme";
+import { PlantProvider } from "../context/PlantContext";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -20,5 +21,9 @@ export default function RootLayout() {
     return <View style={{ flex: 1, backgroundColor: colors.sageBg }} />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <PlantProvider>
+      <Stack screenOptions={{ headerShown: false }} />
+    </PlantProvider>
+  );
 }

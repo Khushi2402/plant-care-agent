@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { usePlant } from "../../hooks/usePlant";
+import { usePlant } from "../../context/PlantContext";
 import { colors, fonts } from "../../lib/theme";
 
 export default function TabLayout() {

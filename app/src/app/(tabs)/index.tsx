@@ -1,17 +1,19 @@
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
 import {
-  ActivityIndicator,
+  View,
+  Text,
   ScrollView,
   StyleSheet,
-  Text,
-  View,
+  ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import MoistureGauge from "../../components/MoistureGauge";
 import DecisionCard from "../../components/DecisionCard";
 import MoistureChart from "../../components/MoistureChart";
-import MoistureGauge from "../../components/MoistureGauge";
-import { usePlant } from "../../hooks/usePlant";
-import { DailyMoisture, getDailyMoisture } from "../../lib/supabase-queries";
-import { colors, fonts, radius, spacing } from "../../lib/theme";
+import { colors, fonts, spacing, radius } from "../../lib/theme";
+import { usePlant } from "../../context/PlantContext";
+import { getDailyMoisture, DailyMoisture } from "../../lib/supabase-queries";
 
 const mockDecisions: {
   id: number;
@@ -34,13 +36,23 @@ const mockDecisions: {
 ];
 
 export default function Dashboard() {
-  const { plant, loading } = usePlant();
+  const { plant, loading, refetch } = usePlant();
   const [history, setHistory] = useState<DailyMoisture[]>([]);
+  const [showData, setShowData] = useState(false);
 
-  useEffect(() => {
+  // Refetch plant every time this tab comes into focus —
+  // fixes staleness after saving a plant on the other tab
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch]),
+  );
+
+  const handleShowData = () => {
     if (plant)
       getDailyMoisture(plant.plant_id).then(setHistory).catch(console.error);
-  }, [plant]);
+    setShowData(true);
+  };
 
   if (loading) {
     return (
@@ -55,8 +67,22 @@ export default function Dashboard() {
       <View style={styles.centered}>
         <Text style={styles.emptyTitle}>No plant yet</Text>
         <Text style={styles.emptyBody}>
-          Head to the "Add Plant" tab to get started.
+          Head to the "Your Plant" tab to add one.
         </Text>
+      </View>
+    );
+  }
+
+  if (!showData) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.emptyTitle}>🌱 {plant.name} added!</Text>
+        <Text style={styles.emptyBody}>
+          Ready to start tracking its moisture.
+        </Text>
+        <TouchableOpacity style={styles.button} onPress={handleShowData}>
+          <Text style={styles.buttonText}>View Moisture Data</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -111,13 +137,22 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: colors.forest,
     marginBottom: 8,
+    textAlign: "center",
   },
   emptyBody: {
     fontFamily: fonts.body,
     fontSize: 14,
     color: colors.textMuted,
     textAlign: "center",
+    marginBottom: spacing.lg,
   },
+  button: {
+    backgroundColor: colors.water,
+    borderRadius: radius.pill,
+    paddingVertical: 14,
+    paddingHorizontal: spacing.xl,
+  },
+  buttonText: { fontFamily: fonts.bodyBold, color: "#fff", fontSize: 15 },
   plantName: { fontFamily: fonts.display, fontSize: 28, color: colors.forest },
   species: {
     fontFamily: fonts.displayLight,

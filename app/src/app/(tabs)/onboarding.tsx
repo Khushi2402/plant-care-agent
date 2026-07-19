@@ -1,18 +1,26 @@
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  StyleSheet,
+  View,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  StyleSheet,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
+  Alert,
 } from "react-native";
-import { usePlant } from "../../hooks/usePlant";
 import { colors, fonts, radius, spacing } from "../../lib/theme";
+import { usePlant } from "../../context/PlantContext";
+import { insertPlant } from "../../lib/supabase-queries";
+import { Keyboard, TouchableWithoutFeedback } from "react-native";
 
 export default function PlantScreen() {
   const { plant, loading, refetch } = usePlant();
   const [plantName, setPlantName] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [proposedProfile, setProposedProfile] = useState<null | {
     species: string;
     watering_notes: string;
@@ -21,13 +29,45 @@ export default function PlantScreen() {
   }>(null);
 
   const handleSubmit = () => {
-    // Mock response — real onboarding agent call comes next
+    if (!plantName.trim()) {
+      setNameError("Enter a plant name first");
+      return;
+    }
+    setNameError("");
+
+    // Hardcoded for now — matches Khushi's actual Snake Plant
+    // Real onboarding agent call replaces this next
     setProposedProfile({
-      species: "Epipremnum aureum",
-      watering_notes: "Let soil dry out between waterings; avoid soggy roots",
-      ideal_moisture_min: 20,
-      ideal_moisture_max: 45,
+      species: "Dracaena trifasciata (Snake Plant)",
+      watering_notes:
+        "Very drought-tolerant. Let soil dry out completely between waterings — overwatering is the main risk, not underwatering.",
+      ideal_moisture_min: 10,
+      ideal_moisture_max: 30,
     });
+  };
+
+  const handleConfirm = async () => {
+    if (!proposedProfile) return;
+    setSaving(true);
+    try {
+      await insertPlant({
+        plant_id: "plant_1",
+        name: plantName.trim(),
+        species: proposedProfile.species,
+        watering_notes: proposedProfile.watering_notes,
+        ideal_moisture_min: proposedProfile.ideal_moisture_min,
+        ideal_moisture_max: proposedProfile.ideal_moisture_max,
+      });
+      await refetch();
+    } catch (e) {
+      Alert.alert(
+        "Couldn't save",
+        "Something went wrong saving your plant. Please try again.",
+      );
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -58,54 +98,82 @@ export default function PlantScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Add a plant</Text>
-      <Text style={styles.subtitle}>
-        Tell us its name — we'll figure out the rest
-      </Text>
-
-      <TextInput
-        style={styles.input}
-        value={plantName}
-        onChangeText={setPlantName}
-        placeholder="e.g. Money Plant"
-        placeholderTextColor={colors.textMuted}
-      />
-
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Get profile</Text>
-      </TouchableOpacity>
-
-      {proposedProfile && (
-        <View style={styles.profileCard}>
-          <Text style={styles.profileHeader}>Proposed profile</Text>
-          <Text style={styles.profileRow}>
-            <Text style={styles.profileLabel}>Species </Text>
-            {proposedProfile.species}
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.sageBg }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.title}>Add a plant</Text>
+          <Text style={styles.subtitle}>
+            Tell us its name — we'll figure out the rest
           </Text>
-          <Text style={styles.profileRow}>
-            <Text style={styles.profileLabel}>Notes </Text>
-            {proposedProfile.watering_notes}
-          </Text>
-          <Text style={styles.profileRow}>
-            <Text style={styles.profileLabel}>Ideal moisture </Text>
-            {proposedProfile.ideal_moisture_min}%–
-            {proposedProfile.ideal_moisture_max}%
-          </Text>
-          <TouchableOpacity
-            style={[styles.button, { marginTop: spacing.md }]}
-            onPress={refetch}
-          >
-            <Text style={styles.buttonText}>Confirm & save</Text>
+
+          <TextInput
+            style={[styles.input, nameError ? styles.inputError : null]}
+            value={plantName}
+            onChangeText={(t) => {
+              setPlantName(t);
+              if (nameError) setNameError("");
+            }}
+            placeholder="e.g. Snake Plant"
+            placeholderTextColor={colors.textMuted}
+          />
+          {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+            <Text style={styles.buttonText}>Get profile</Text>
           </TouchableOpacity>
-        </View>
-      )}
-    </View>
+
+          {proposedProfile && (
+            <View style={styles.profileCard}>
+              <Text style={styles.profileHeader}>Proposed profile</Text>
+              <Text style={styles.profileRow}>
+                <Text style={styles.profileLabel}>Species </Text>
+                {proposedProfile.species}
+              </Text>
+              <Text style={styles.profileRow}>
+                <Text style={styles.profileLabel}>Notes </Text>
+                {proposedProfile.watering_notes}
+              </Text>
+              <Text style={styles.profileRow}>
+                <Text style={styles.profileLabel}>Ideal moisture </Text>
+                {proposedProfile.ideal_moisture_min}%–
+                {proposedProfile.ideal_moisture_max}%
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  { marginTop: spacing.md },
+                  saving && { opacity: 0.6 },
+                ]}
+                onPress={handleConfirm}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Confirm & save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.sageBg, padding: spacing.lg },
+  container: {
+    flexGrow: 1,
+    backgroundColor: colors.sageBg,
+    padding: spacing.lg,
+  },
   centered: {
     flex: 1,
     backgroundColor: colors.sageBg,
@@ -128,6 +196,13 @@ const styles = StyleSheet.create({
     color: colors.forest,
     borderWidth: 1,
     borderColor: colors.moss,
+    marginBottom: spacing.sm,
+  },
+  inputError: { borderColor: colors.clay },
+  errorText: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.clay,
     marginBottom: spacing.md,
   },
   button: {
