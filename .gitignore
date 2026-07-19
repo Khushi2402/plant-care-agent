@@ -224,3 +224,6 @@ secrets.h
 node_modules/
 .expo/
 .env
+
+supabase/.temp/
+.vscode/
