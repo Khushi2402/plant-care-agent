@@ -10,23 +10,55 @@ import {
   ScrollView,
   Platform,
   Alert,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { colors, fonts, radius, spacing } from "../../lib/theme";
 import { usePlant } from "../../context/PlantContext";
 import { insertPlant } from "../../lib/supabase-queries";
-import { Keyboard, TouchableWithoutFeedback } from "react-native";
+import { getPlantProfile } from "../../lib/onboarding-agent";
+
+type Profile = {
+  species: string;
+  watering_notes: string;
+  ideal_moisture_min: number;
+  ideal_moisture_max: number;
+};
 
 export default function PlantScreen() {
   const { plant, loading, refetch } = usePlant();
   const [plantName, setPlantName] = useState("");
   const [nameError, setNameError] = useState("");
+  const [fetching, setFetching] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [proposedProfile, setProposedProfile] = useState<null | {
-    species: string;
-    watering_notes: string;
-    ideal_moisture_min: number;
-    ideal_moisture_max: number;
-  }>(null);
+  const [proposedProfile, setProposedProfile] = useState<Profile | null>(null);
+  const [clarifyQuestion, setClarifyQuestion] = useState<string | null>(null);
+  const [clarifyAnswer, setClarifyAnswer] = useState("");
+  const [apiError, setApiError] = useState("");
+
+  const runQuery = async (query: string) => {
+    setFetching(true);
+    setApiError("");
+    setClarifyQuestion(null);
+    setProposedProfile(null);
+
+    const result = await getPlantProfile(query);
+
+    if (result.status === "ok") {
+      setProposedProfile({
+        species: result.species,
+        watering_notes: result.watering_notes,
+        ideal_moisture_min: result.ideal_moisture_min,
+        ideal_moisture_max: result.ideal_moisture_max,
+      });
+    } else if (result.status === "clarify") {
+      setClarifyQuestion(result.question);
+    } else {
+      setApiError(result.message);
+    }
+
+    setFetching(false);
+  };
 
   const handleSubmit = () => {
     if (!plantName.trim()) {
@@ -34,16 +66,12 @@ export default function PlantScreen() {
       return;
     }
     setNameError("");
+    runQuery(plantName.trim());
+  };
 
-    // Hardcoded for now — matches Khushi's actual Snake Plant
-    // Real onboarding agent call replaces this next
-    setProposedProfile({
-      species: "Dracaena trifasciata (Snake Plant)",
-      watering_notes:
-        "Very drought-tolerant. Let soil dry out completely between waterings — overwatering is the main risk, not underwatering.",
-      ideal_moisture_min: 10,
-      ideal_moisture_max: 30,
-    });
+  const handleClarifySubmit = () => {
+    if (!clarifyAnswer.trim()) return;
+    runQuery(`${plantName.trim()} — ${clarifyAnswer.trim()}`);
   };
 
   const handleConfirm = async () => {
@@ -122,12 +150,52 @@ export default function PlantScreen() {
             }}
             placeholder="e.g. Snake Plant"
             placeholderTextColor={colors.textMuted}
+            editable={!fetching}
           />
           {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
-          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.buttonText}>Get profile</Text>
+          <TouchableOpacity
+            style={[styles.button, fetching && { opacity: 0.6 }]}
+            onPress={handleSubmit}
+            disabled={fetching}
+          >
+            {fetching ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Get profile</Text>
+            )}
           </TouchableOpacity>
+
+          {apiError ? (
+            <View style={styles.errorCard}>
+              <Text style={styles.errorCardText}>{apiError}</Text>
+            </View>
+          ) : null}
+
+          {clarifyQuestion && (
+            <View style={styles.profileCard}>
+              <Text style={styles.profileHeader}>Just to be sure</Text>
+              <Text style={styles.profileRow}>{clarifyQuestion}</Text>
+              <TextInput
+                style={styles.input}
+                value={clarifyAnswer}
+                onChangeText={setClarifyAnswer}
+                placeholder="Your answer"
+                placeholderTextColor={colors.textMuted}
+              />
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleClarifySubmit}
+                disabled={fetching}
+              >
+                {fetching ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Continue</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
 
           {proposedProfile && (
             <View style={styles.profileCard}>
@@ -205,6 +273,15 @@ const styles = StyleSheet.create({
     color: colors.clay,
     marginBottom: spacing.md,
   },
+  errorCard: {
+    backgroundColor: "#F7E6DC",
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.clay,
+  },
+  errorCardText: { fontFamily: fonts.body, fontSize: 14, color: colors.clay },
   button: {
     backgroundColor: colors.water,
     borderRadius: radius.pill,
