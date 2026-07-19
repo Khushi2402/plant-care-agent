@@ -1,0 +1,27 @@
+name: Daily Watering Agent
+
+on:
+  schedule:
+    - cron: "30 23 * * *" # 5:00 AM IST (UTC+5:30) — runs at 23:30 UTC the previous day
+  workflow_dispatch: {} # allows manual trigger from GitHub UI for testing
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r agents/watering/requirements.txt
+
+      - name: Run daily watering agent
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          APP_SECRET: ${{ secrets.APP_SECRET }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python agents/watering/daily_agent.py
