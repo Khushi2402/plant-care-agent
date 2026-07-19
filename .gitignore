@@ -223,3 +223,4 @@ secrets.h
 # Node / Expo app (future)
 node_modules/
 .expo/
+.env
