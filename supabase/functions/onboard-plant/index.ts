@@ -23,17 +23,20 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { plant_name } = await req.json();
+  const { plant_name, location_name } = await req.json();
 
-    if (!plant_name || typeof plant_name !== "string" || !plant_name.trim()) {
-      return new Response(JSON.stringify({ error: "plant_name is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+if (!plant_name || typeof plant_name !== "string" || !plant_name.trim()) {
+  return new Response(JSON.stringify({ error: "plant_name is required" }), {
+    status: 400,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
-    const prompt = `A user in India wants to add "${plant_name.trim()}" to a soil-moisture monitoring system for a houseplant.
+const locationContext = location_name?.trim()
+  ? `The plant will be located in ${location_name.trim()}, India.`
+  : "";
 
+const prompt = `A user in India wants to add "${plant_name.trim()}" to a soil-moisture monitoring system for a houseplant. ${locationContext}
 Respond with ONLY a JSON object, no other text, no markdown formatting.
 
 If the plant name clearly identifies a common houseplant species (including common Indian household plants like Money Plant, Snake Plant, Tulsi, Areca Palm, etc.), respond with:

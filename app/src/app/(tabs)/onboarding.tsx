@@ -17,6 +17,7 @@ import { colors, fonts, radius, spacing } from "../../lib/theme";
 import { usePlant } from "../../context/PlantContext";
 import { insertPlant } from "../../lib/supabase-queries";
 import { getPlantProfile } from "../../lib/onboarding-agent";
+import { geocodeCity } from "../../lib/geocode";
 
 type Profile = {
   species: string;
@@ -24,25 +25,29 @@ type Profile = {
   ideal_moisture_min: number;
   ideal_moisture_max: number;
 };
+type Geo = { lat: number; lon: number; displayName: string };
 
 export default function PlantScreen() {
   const { plant, loading, refetch } = usePlant();
   const [plantName, setPlantName] = useState("");
+  const [location, setLocation] = useState("");
   const [nameError, setNameError] = useState("");
+  const [locationError, setLocationError] = useState("");
   const [fetching, setFetching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [proposedProfile, setProposedProfile] = useState<Profile | null>(null);
+  const [resolvedGeo, setResolvedGeo] = useState<Geo | null>(null);
   const [clarifyQuestion, setClarifyQuestion] = useState<string | null>(null);
   const [clarifyAnswer, setClarifyAnswer] = useState("");
   const [apiError, setApiError] = useState("");
 
-  const runQuery = async (query: string) => {
+  const runQuery = async (nameQuery: string, geo: Geo) => {
     setFetching(true);
     setApiError("");
     setClarifyQuestion(null);
     setProposedProfile(null);
 
-    const result = await getPlantProfile(query);
+    const result = await getPlantProfile(nameQuery, geo.displayName);
 
     if (result.status === "ok") {
       setProposedProfile({
@@ -60,22 +65,42 @@ export default function PlantScreen() {
     setFetching(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    let hasError = false;
     if (!plantName.trim()) {
       setNameError("Enter a plant name first");
+      hasError = true;
+    }
+    if (!location.trim()) {
+      setLocationError("Enter your city so we can factor in local climate");
+      hasError = true;
+    }
+    if (hasError) return;
+
+    setNameError("");
+    setLocationError("");
+    setFetching(true);
+
+    const geo = await geocodeCity(location.trim());
+    if (!geo) {
+      setLocationError(
+        'City not found — try a different spelling, e.g. "Nagpur"',
+      );
+      setFetching(false);
       return;
     }
-    setNameError("");
-    runQuery(plantName.trim());
+
+    setResolvedGeo(geo);
+    await runQuery(plantName.trim(), geo);
   };
 
   const handleClarifySubmit = () => {
-    if (!clarifyAnswer.trim()) return;
-    runQuery(`${plantName.trim()} — ${clarifyAnswer.trim()}`);
+    if (!clarifyAnswer.trim() || !resolvedGeo) return;
+    runQuery(`${plantName.trim()} — ${clarifyAnswer.trim()}`, resolvedGeo);
   };
 
   const handleConfirm = async () => {
-    if (!proposedProfile) return;
+    if (!proposedProfile || !resolvedGeo) return;
     setSaving(true);
     try {
       await insertPlant({
@@ -85,6 +110,9 @@ export default function PlantScreen() {
         watering_notes: proposedProfile.watering_notes,
         ideal_moisture_min: proposedProfile.ideal_moisture_min,
         ideal_moisture_max: proposedProfile.ideal_moisture_max,
+        latitude: resolvedGeo.lat,
+        longitude: resolvedGeo.lon,
+        location_name: resolvedGeo.displayName,
       });
       await refetch();
     } catch (e) {
@@ -120,6 +148,12 @@ export default function PlantScreen() {
             <Text style={styles.profileLabel}>Ideal moisture </Text>
             {plant.ideal_moisture_min}%–{plant.ideal_moisture_max}%
           </Text>
+          {plant.location_name && (
+            <Text style={styles.profileRow}>
+              <Text style={styles.profileLabel}>Location </Text>
+              {plant.location_name}
+            </Text>
+          )}
         </View>
       </View>
     );
@@ -138,7 +172,7 @@ export default function PlantScreen() {
         >
           <Text style={styles.title}>Add a plant</Text>
           <Text style={styles.subtitle}>
-            Tell us its name — we'll figure out the rest
+            Tell us its name and location — we'll figure out the rest
           </Text>
 
           <TextInput
@@ -148,11 +182,26 @@ export default function PlantScreen() {
               setPlantName(t);
               if (nameError) setNameError("");
             }}
-            placeholder="e.g. Snake Plant"
+            placeholder="Plant name, e.g. Snake Plant"
             placeholderTextColor={colors.textMuted}
             editable={!fetching}
           />
           {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+
+          <TextInput
+            style={[styles.input, locationError ? styles.inputError : null]}
+            value={location}
+            onChangeText={(t) => {
+              setLocation(t);
+              if (locationError) setLocationError("");
+            }}
+            placeholder="Your city, e.g. Nagpur"
+            placeholderTextColor={colors.textMuted}
+            editable={!fetching}
+          />
+          {locationError ? (
+            <Text style={styles.errorText}>{locationError}</Text>
+          ) : null}
 
           <TouchableOpacity
             style={[styles.button, fetching && { opacity: 0.6 }]}
@@ -212,6 +261,10 @@ export default function PlantScreen() {
                 <Text style={styles.profileLabel}>Ideal moisture </Text>
                 {proposedProfile.ideal_moisture_min}%–
                 {proposedProfile.ideal_moisture_max}%
+              </Text>
+              <Text style={styles.profileRow}>
+                <Text style={styles.profileLabel}>Location </Text>
+                {resolvedGeo?.displayName}
               </Text>
               <TouchableOpacity
                 style={[
