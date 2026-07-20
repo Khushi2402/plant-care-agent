@@ -1,7 +1,7 @@
 import os
 import json
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_ANON_KEY = os.environ["SUPABASE_ANON_KEY"]
@@ -32,7 +32,7 @@ def get_plant():
 
 
 def get_moisture_trend(plant_id: str) -> str:
-    since = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+   since = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
     res = requests.get(
         f"{SUPABASE_URL}/rest/v1/readings",
         headers=HEADERS,

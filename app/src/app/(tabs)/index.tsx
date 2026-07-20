@@ -13,32 +13,18 @@ import DecisionCard from "../../components/DecisionCard";
 import MoistureChart from "../../components/MoistureChart";
 import { colors, fonts, spacing, radius } from "../../lib/theme";
 import { usePlant } from "../../context/PlantContext";
-import { getDailyMoisture, DailyMoisture } from "../../lib/supabase-queries";
-
-const mockDecisions: {
-  id: number;
-  date: string;
-  decision: "water" | "hold" | "skip";
-  reasoning: string;
-}[] = [
-  {
-    id: 1,
-    date: "Jul 18",
-    decision: "hold",
-    reasoning: "Moisture at 45%, still within range. Rain expected tomorrow.",
-  },
-  {
-    id: 2,
-    date: "Jul 17",
-    decision: "water",
-    reasoning: "Moisture dropped to 22%, below ideal range. No rain forecast.",
-  },
-];
+import {
+  getDailyMoisture,
+  getRecentDecisions,
+  DailyMoisture,
+  Decision,
+} from "../../lib/supabase-queries";
 
 export default function Dashboard() {
   const { plant, loading, refetch } = usePlant();
   const [history, setHistory] = useState<DailyMoisture[]>([]);
   const [showData, setShowData] = useState(false);
+  const [decisions, setDecisions] = useState<Decision[]>([]);
 
   // Refetch plant every time this tab comes into focus —
   // fixes staleness after saving a plant on the other tab
@@ -49,8 +35,12 @@ export default function Dashboard() {
   );
 
   const handleShowData = () => {
-    if (plant)
+    if (plant) {
       getDailyMoisture(plant.plant_id).then(setHistory).catch(console.error);
+      getRecentDecisions(plant.plant_id)
+        .then(setDecisions)
+        .catch(console.error);
+    }
     setShowData(true);
   };
 
@@ -111,14 +101,23 @@ export default function Dashboard() {
       </View>
 
       <Text style={styles.sectionTitle}>Recent decisions</Text>
-      {mockDecisions.map((d) => (
-        <DecisionCard
-          key={d.id}
-          date={d.date}
-          decision={d.decision}
-          reasoning={d.reasoning}
-        />
-      ))}
+      {decisions.length === 0 ? (
+        <Text style={styles.emptyBody}>
+          No decisions logged yet — check back after the next scheduled run.
+        </Text>
+      ) : (
+        decisions.map((d) => (
+          <DecisionCard
+            key={d.id}
+            date={new Date(d.created_at).toLocaleDateString("en-IN", {
+              month: "short",
+              day: "numeric",
+            })}
+            decision={d.decision}
+            reasoning={d.reasoning}
+          />
+        ))
+      )}
     </ScrollView>
   );
 }

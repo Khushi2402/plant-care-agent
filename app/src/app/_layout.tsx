@@ -8,6 +8,7 @@ import { Stack } from "expo-router";
 import { View } from "react-native";
 import { colors } from "../lib/theme";
 import { PlantProvider } from "../context/PlantContext";
+import { useRegisterPushToken } from "../hooks/useRegisterPushToken";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -16,6 +17,8 @@ export default function RootLayout() {
     Manrope_500Medium,
     Manrope_700Bold,
   });
+
+  useRegisterPushToken();
 
   if (!fontsLoaded) {
     return <View style={{ flex: 1, backgroundColor: colors.sageBg }} />;
