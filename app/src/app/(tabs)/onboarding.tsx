@@ -18,6 +18,7 @@ import { usePlant } from "../../context/PlantContext";
 import { insertPlant } from "../../lib/supabase-queries";
 import { getPlantProfile } from "../../lib/onboarding-agent";
 import { geocodeCity } from "../../lib/geocode";
+import { Ionicons } from "@expo/vector-icons";
 
 type Profile = {
   species: string;
@@ -40,6 +41,7 @@ export default function PlantScreen() {
   const [clarifyQuestion, setClarifyQuestion] = useState<string | null>(null);
   const [clarifyAnswer, setClarifyAnswer] = useState("");
   const [apiError, setApiError] = useState("");
+  const [showNotes, setShowNotes] = useState(false);
 
   const runQuery = async (nameQuery: string, geo: Geo) => {
     setFetching(true);
@@ -136,26 +138,66 @@ export default function PlantScreen() {
 
   if (plant) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>{plant.name}</Text>
-        {plant.species && <Text style={styles.subtitle}>{plant.species}</Text>}
-        <View style={styles.profileCard}>
-          <Text style={styles.profileRow}>
-            <Text style={styles.profileLabel}>Notes </Text>
-            {plant.watering_notes ?? "None yet"}
-          </Text>
-          <Text style={styles.profileRow}>
-            <Text style={styles.profileLabel}>Ideal moisture </Text>
-            {plant.ideal_moisture_min}%–{plant.ideal_moisture_max}%
-          </Text>
-          {plant.location_name && (
-            <Text style={styles.profileRow}>
-              <Text style={styles.profileLabel}>Location </Text>
-              {plant.location_name}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ padding: spacing.lg }}
+      >
+        <View style={styles.heroRow}>
+          <View style={styles.heroIcon}>
+            <Ionicons name="leaf" size={32} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>{plant.name}</Text>
+            {plant.species && (
+              <Text style={styles.subtitle}>{plant.species}</Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.chipRow}>
+          <View style={styles.chip}>
+            <Ionicons name="water-outline" size={22} color={colors.water} />
+            <Text style={styles.chipValue}>
+              {plant.ideal_moisture_min}–{plant.ideal_moisture_max}%
             </Text>
+            <Text style={styles.chipLabel}>Ideal range</Text>
+          </View>
+          {plant.location_name && (
+            <View style={styles.chip}>
+              <Ionicons name="location-outline" size={22} color={colors.moss} />
+              <Text style={styles.chipValue} numberOfLines={1}>
+                {plant.location_name.split(",")[0]}
+              </Text>
+              <Text style={styles.chipLabel}>Location</Text>
+            </View>
           )}
         </View>
-      </View>
+
+        <TouchableOpacity
+          style={styles.notesCard}
+          onPress={() => setShowNotes(!showNotes)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.notesHeader}>
+            <Ionicons
+              name="information-circle-outline"
+              size={20}
+              color={colors.forest}
+            />
+            <Text style={styles.notesTitle}>Care notes</Text>
+            <Ionicons
+              name={showNotes ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={colors.textMuted}
+            />
+          </View>
+          {showNotes && (
+            <Text style={styles.notesText}>
+              {plant.watering_notes ?? "None yet"}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
     );
   }
 
@@ -361,5 +403,58 @@ const styles = StyleSheet.create({
     color: colors.forest,
     marginBottom: spacing.sm,
     lineHeight: 20,
+  },
+  heroRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: spacing.lg,
+  },
+  heroIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.moss,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: spacing.md,
+  },
+  chipRow: { flexDirection: "row", gap: spacing.md, marginBottom: spacing.lg },
+  chip: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    alignItems: "center",
+  },
+  chipValue: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 16,
+    color: colors.forest,
+    marginTop: 6,
+  },
+  chipLabel: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  notesCard: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  notesHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  notesTitle: {
+    flex: 1,
+    fontFamily: fonts.bodyBold,
+    fontSize: 15,
+    color: colors.forest,
+  },
+  notesText: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.forest,
+    lineHeight: 20,
+    marginTop: spacing.sm,
   },
 });

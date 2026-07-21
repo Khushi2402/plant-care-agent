@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import { colors, fonts, radius } from "../lib/theme";
+import { Ionicons } from "@expo/vector-icons";
 
 type Props = {
   pct: number; // current moisture 0-100
@@ -23,13 +24,16 @@ export default function MoistureGauge({ pct, min, max }: Props) {
       </View>
       <View style={styles.readout}>
         <Text style={styles.pctText}>{pct}%</Text>
-        <Text style={styles.statusText}>
-          {inRange
-            ? "Happy & hydrated"
-            : pct < min
-              ? "Getting thirsty"
-              : "A bit soggy"}
-        </Text>
+        <View style={styles.statusRow}>
+          <Ionicons
+            name={inRange ? "checkmark-circle" : "alert-circle"}
+            size={20}
+            color={fillColor}
+          />
+          <Text style={[styles.statusText, { color: fillColor }]}>
+            {inRange ? "Good" : pct < min ? "Low" : "High"}
+          </Text>
+        </View>
         <Text style={styles.rangeText}>
           Ideal range: {min}–{max}%
         </Text>
@@ -68,5 +72,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     marginTop: 4,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 2,
   },
 });

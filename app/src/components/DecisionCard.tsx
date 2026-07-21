@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, fonts, radius, spacing } from "../lib/theme";
 
 type Props = {
@@ -8,16 +10,28 @@ type Props = {
 };
 
 const decisionMeta = {
-  water: { label: "Watered", color: colors.water },
-  hold: { label: "Held off", color: colors.clay },
-  skip: { label: "Skipped", color: colors.moss },
+  water: { label: "Water", icon: "water" as const, color: colors.water },
+  hold: { label: "Wait", icon: "rainy" as const, color: colors.clay },
+  skip: {
+    label: "Skip",
+    icon: "checkmark-circle" as const,
+    color: colors.moss,
+  },
 };
 
 export default function DecisionCard({ date, decision, reasoning }: Props) {
+  const [expanded, setExpanded] = useState(false);
   const meta = decisionMeta[decision];
+
   return (
-    <View style={styles.card}>
-      <View style={[styles.bar, { backgroundColor: meta.color }]} />
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => setExpanded(!expanded)}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.iconCircle, { backgroundColor: meta.color }]}>
+        <Ionicons name={meta.icon} size={28} color="#fff" />
+      </View>
       <View style={styles.content}>
         <View style={styles.headerRow}>
           <Text style={[styles.label, { color: meta.color }]}>
@@ -25,9 +39,16 @@ export default function DecisionCard({ date, decision, reasoning }: Props) {
           </Text>
           <Text style={styles.date}>{date}</Text>
         </View>
-        <Text style={styles.reasoning}>{reasoning}</Text>
+        {expanded ? (
+          <Text style={styles.reasoning}>{reasoning}</Text>
+        ) : (
+          <View style={styles.tapHintRow}>
+            <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
+            <Text style={styles.tapHint}>Why?</Text>
+          </View>
+        )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -37,21 +58,37 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: radius.md,
     marginBottom: spacing.md,
-    overflow: "hidden",
+    padding: spacing.md,
+    alignItems: "center",
   },
-  bar: { width: 5 },
-  content: { flex: 1, padding: spacing.md },
+  iconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: spacing.md,
+  },
+  content: { flex: 1 },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 6,
+    alignItems: "center",
   },
-  label: { fontFamily: fonts.bodyBold, fontSize: 14 },
+  label: { fontFamily: fonts.bodyBold, fontSize: 18 },
   date: { fontFamily: fonts.body, fontSize: 12, color: colors.textMuted },
+  tapHintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  tapHint: { fontFamily: fonts.body, fontSize: 12, color: colors.textMuted },
   reasoning: {
     fontFamily: fonts.body,
     fontSize: 14,
     color: colors.forest,
     lineHeight: 20,
+    marginTop: 6,
   },
 });
