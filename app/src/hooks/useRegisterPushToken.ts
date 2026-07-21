@@ -3,6 +3,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { router } from 'expo-router';
 import { registerDeviceToken } from '../lib/supabase-queries';
 
 Notifications.setNotificationHandler({
@@ -56,6 +57,20 @@ export function useRegisterPushToken() {
       }
     }
 
+    // Handle the case where the app was fully closed and opened by tapping a notification
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) {
+        router.push('/notifications');
+      }
+    });
+
     register();
+
+    // Handle taps while the app is open or backgrounded
+    const subscription = Notifications.addNotificationResponseReceivedListener(() => {
+      router.push('/notifications');
+    });
+
+    return () => subscription.remove();
   }, []);
 }

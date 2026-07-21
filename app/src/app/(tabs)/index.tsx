@@ -99,25 +99,6 @@ export default function Dashboard() {
       <View style={styles.chartCard}>
         <MoistureChart data={history} />
       </View>
-
-      <Text style={styles.sectionTitle}>Recent decisions</Text>
-      {decisions.length === 0 ? (
-        <Text style={styles.emptyBody}>
-          No decisions logged yet — check back after the next scheduled run.
-        </Text>
-      ) : (
-        decisions.map((d) => (
-          <DecisionCard
-            key={d.id}
-            date={new Date(d.created_at).toLocaleDateString("en-IN", {
-              month: "short",
-              day: "numeric",
-            })}
-            decision={d.decision}
-            reasoning={d.reasoning}
-          />
-        ))
-      )}
     </ScrollView>
   );
 }
