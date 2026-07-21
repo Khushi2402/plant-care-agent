@@ -144,9 +144,15 @@ Once you have both pieces of information, respond with ONLY a JSON object (no ma
 
         tool_calls = message.get("tool_calls")
         if not tool_calls:
-            # Final answer — no more tool calls, parse it
+            # Final answer — no more tool calls, parse it.
+            # Extract just the {...} block since some models add trailing text after valid JSON.
             content = message["content"].replace("```json", "").replace("```", "").strip()
-            return json.loads(content)
+            start = content.find("{")
+            end = content.rfind("}")
+            if start == -1 or end == -1:
+                raise ValueError(f"No JSON object found in model response: {content}")
+            json_str = content[start:end + 1]
+            return json.loads(json_str)
 
         for call in tool_calls:
             fn_name = call["function"]["name"]
@@ -164,7 +170,6 @@ Once you have both pieces of information, respond with ONLY a JSON object (no ma
             })
 
     raise RuntimeError(f"Agent exceeded {MAX_TOOL_ITERATIONS} tool iterations without a final decision.")
-
 
 def log_decision(plant_id: str, result: dict):
     res = requests.post(
