@@ -61,7 +61,7 @@ If the name is ambiguous (could reasonably refer to more than one distinct speci
         "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "anthropic/claude-haiku-4.5",
+        model: "google/gemini-2.5-flash-lite",
         max_tokens: 400,
         messages: [{ role: "user", content: prompt }],
       }),

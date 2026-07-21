@@ -132,7 +132,7 @@ Once you have both pieces of information, respond with ONLY a JSON object (no ma
                 "Content-Type": "application/json",
             },
             json={
-                "model": "anthropic/claude-haiku-4.5",
+                "model": "google/gemini-2.5-flash-lite",
                 "max_tokens": 600,
                 "messages": messages,
                 "tools": TOOLS,
