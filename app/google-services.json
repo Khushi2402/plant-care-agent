@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "476612817934",
+    "project_id": "plant-care-agent",
+    "storage_bucket": "plant-care-agent.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:476612817934:android:015d1906bd6462167eb85f",
+        "android_client_info": {
+          "package_name": "com.khushi24k.plantcareapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8bQq3lyLDxB9tCX-ZpR1iBAwCSI6SY44"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
