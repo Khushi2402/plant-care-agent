@@ -14,7 +14,7 @@ An AI agent that decides whether a houseplant needs watering — using real soil
 - The decision and full reasoning are logged to Supabase, and a push notification is sent to the companion mobile app.
 - A separate **onboarding agent** lets a user add a plant by name + city — it proposes a care profile (species, watering notes, ideal moisture range, factoring in local climate), asks a clarifying question if the name is ambiguous, and the user reviews/edits before it's saved.
 
-This project is designed to demonstrate **real multi-step tool use and batch reasoning**, not a single API call wrapped in a UI — a pattern carried forward and leveled up from earlier prototypes in this series (NightGuard, Desk Buddy).
+This project is designed to demonstrate **real multi-step tool use and batch reasoning**, not a single API call wrapped in a UI.
 
 ## Architecture
 
