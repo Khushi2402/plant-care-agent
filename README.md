@@ -74,4 +74,4 @@ This project is designed to demonstrate **real multi-step tool use and batch rea
 
 ## Project Series
 
-Part of **Khushi Builds** — a portfolio series of hardware + AI agent projects. See also: NightGuard, Desk Buddy.
+Part of **Khushi Builds** — a portfolio series of hardware + AI agent projects.
